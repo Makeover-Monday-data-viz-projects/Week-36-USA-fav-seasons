@@ -1,0 +1,13 @@
+Age group,Season,Preference value
+18-34 year olds,Spring,0.2
+35-54 year olds,Spring,0.25
+55 and over,Spring,0.37
+18-34 year olds,Summer,0.3
+35-54 year olds,Summer,0.27
+55 and over,Summer,0.2
+18-34 year olds,Fall,0.26
+35-54 year olds,Fall,0.31
+55 and over,Fall,0.3
+18-34 year olds,Winter,0.13
+35-54 year olds,Winter,0.06
+55 and over,Winter,0.04

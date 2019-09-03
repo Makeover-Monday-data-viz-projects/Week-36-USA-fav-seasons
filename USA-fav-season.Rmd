@@ -1,0 +1,118 @@
+---
+title: "Americans in the Heartland not in Love with Weather There"
+author: "Joe Rubash"
+date: "September 1, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# 01 - Libraries----------------------------------------------------------------
+
+library(tidyverse)
+library(httr)
+library(readxl)
+library(wesanderson)
+library(scales)
+library(ggthemes)
+
+
+
+# 02 - Load and save data-------------------------------------------------------
+# data URL
+file.url <- "https://query.data.world/s/jojvebvgq7wlx7ircyeqad6pgp3cry"
+
+# function to read in data from net
+load_data_from_net <- function(file.url){
+    GET(file.url,
+        write_disk(tf <- tempfile(fileext = ".xlsx")))
+    read_xlsx(tf, skip = 1)
+}
+
+# once read from net save to csv in data folder
+csv.file <- "./data/USA-fav-seasons.csv"
+
+data <- if(file.exists(csv.file)) {
+         read_csv(csv.file)
+    } else{
+        load_data_from_net(file.url) %>% 
+        write_csv(., "./data/USA-fav-seasons.csv")
+    }
+
+
+
+# 03 - Format data--------------------------------------------------------------
+names(data) <- make.names(names(data)) %>% 
+    tolower()
+
+# change age.group and season to factors
+data <- modify_at(data,
+                  .at = c("age.group",
+                          "season"),
+                  as.factor)
+
+# reorder season levels 
+data$season <- fct_relevel(data$season,
+                           "Spring",
+                           "Summer",
+                           "Fall",
+                           "Winter")
+
+```
+```{r Bar chart pref for seasons by age.group}
+# add variable to order seasons
+data.ordered <- data %>% 
+    group_by(age.group) %>% 
+    arrange(by = preference.value,
+            .by_group = TRUE) %>% 
+    mutate(season.index = 1:length(season),
+           alpha = if_else(season.index %in% c(1, 2, 3), "not fav season", "favorite season"))
+
+data.ordered$alpha <- fct_relevel(data.ordered$alpha, "not fav season", "favorite season")
+
+ggplot(data = data.ordered,
+       aes(x = season,
+                 y = preference.value))+
+    geom_bar(stat = "identity",
+             position = "dodge",
+             fill = "gray")+
+    geom_bar(data = data %>% 
+                 group_by(age.group) %>% 
+                 top_n(x = ., 
+                       n = 1,
+                       wt = preference.value) %>% 
+                 ungroup(),
+             aes(fill = season),
+             stat = "identity")+
+    facet_grid(. ~ age.group, scales = "free")+
+    scale_y_continuous(labels = percent_format(1))+
+    labs(x = "",
+         y = "% Prefered",
+         fill = "Seasons",
+         title = "Favorite Season of Depends on your Age",
+         caption = "data from the ....")+
+    theme_tufte()+
+    theme(strip.text.y = element_text(angle = 0),
+          legend.position = "bottom",
+          text = element_text(size = 14))+
+    scale_fill_manual(values = c("#99FF33", "#FFCC33", "#CC6633", "#3399FF"))
+
+ggsave("./output/plot.1.season.pref.by.age.png")
+```
+```{r age group plot}
+
+age.group.df <- data.frame(age = c(0:100))
+age.group.df$age.group <-  if_else(age.group.df$age > 17 & age.group.df$age < 35,
+                           "18-34 years old",
+                           if_else(age.group.df$age >34 & age.group.df$age < 55,
+                                   "35-54 years old",
+                                   if_else(age.group.df$age > 54, "55 and over", "NA")))
+
+ggplot(data = age.group.df,
+       aes(x = age,
+           fill = age.group),
+       y = 1)+
+    geom_bar()
+```
+
