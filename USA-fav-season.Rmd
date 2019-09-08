@@ -60,6 +60,69 @@ data$season <- fct_relevel(data$season,
                            "Winter")
 
 ```
+
+```{r Bar chart pref for seasons by age.group - ordered}
+# add variable to order seasons
+data.ordered <- data %>% 
+    group_by(age.group) %>% 
+    arrange(by = desc(preference.value),
+            .by_group = TRUE) %>% 
+    ungroup() %>% 
+    mutate(order = row_number())
+
+
+ggplot(data = data.ordered,
+       aes(x = order,
+           y = preference.value))+
+    geom_bar(stat = "identity",
+             position = "dodge",
+             fill = "gray")+
+    geom_bar(data = data.ordered %>%
+                 group_by(age.group) %>%
+                 top_n(x = .,
+                       n = 1,
+                       wt = preference.value) %>%
+                 ungroup(),
+             aes(x = order,
+                 y = preference.value,
+                 fill = season),
+             stat = "identity",
+             inheret = FALSE ,
+             width = 0.9)+
+    facet_grid(. ~ age.group, scales = "free")+
+    labs(x = "",
+         y = "% Prefered",
+         fill = "Seasons",
+         title = "Favorite Season Depends upon Your Age",
+         subtitle = "A recent survey of Americans showed that the most preferred season appeared 
+to depend upon the age of those polled. However, in all age groups winter was the
+least preferred season.",
+caption = "Source = https://today.yougov.com/topics/lifestyle/articles-reports/2013/06/10/fall-favorite-season-most-americans-33-heartland-l")+
+    geom_text(data = data.ordered %>%
+                  group_by(age.group) %>%
+                  top_n(x = .,
+                        n = 1,
+                        wt = preference.value) %>%
+                  ungroup(),
+              aes(label = season,
+                  y = preference.value + 0.01),
+              vjust = 0)+
+    theme_tufte()+
+    theme(text = element_text(size = 14),
+          strip.text.x = element_text(size = 14),
+          plot.title = element_text(size = 24),
+          plot.caption = element_text(size = 8))+
+    scale_fill_manual(values = c("#99FF33", "#FFCC33", "#CC6633", "#3399FF"))+
+    scale_x_continuous(breaks = data.ordered$order,
+                       labels = data.ordered$season)+
+    scale_y_continuous(labels = percent_format(1),
+                       limits = c(0, 0.45))+
+    guides(fill = "none")
+
+
+ggsave("./output/season.pref.by.age.ordered.png")
+```
+Alternate plots... exploring other ideas
 ```{r Bar chart pref for seasons by age.group}
 # add variable to order seasons
 data.ordered <- data %>% 
@@ -96,9 +159,19 @@ ggplot(data = data.ordered,
     theme(strip.text.y = element_text(angle = 0),
           legend.position = "bottom",
           text = element_text(size = 14))+
-    scale_fill_manual(values = c("#99FF33", "#FFCC33", "#CC6633", "#3399FF"))
+    scale_fill_manual(values = c("#99FF33", "#FFCC33", "#CC6633", "#3399FF"))+
+    geom_text(data = data %>% 
+                 group_by(age.group) %>% 
+                 top_n(x = ., 
+                       n = 1,
+                       wt = preference.value) %>% 
+                 ungroup(),
+              aes(label = season,
+                  y = preference.value + 0.01),
+              vjust = 0)
+              
 
-ggsave("./output/plot.1.season.pref.by.age.png")
+ggsave("./output/season.pref.by.age.png")
 ```
 ```{r age group plot}
 
